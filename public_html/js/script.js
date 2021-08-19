@@ -15,8 +15,24 @@ function main() {
     ctx.fillStyle = "rgb(120, 120, 120)";
     ctx.fillRect(0, 0, width, height);
 
-    var game_grid = new CanvasGrid(canvas, 7, 7, 4);
+    var game_grid = new CanvasGrid(canvas, 10, 10, 2);
     game_grid.start();
+
+    tileSelect();
+
+    canvas.addEventListener("click", event => {
+        var mouse_x = event.offsetX;
+        var mouse_y = event.offsetY;
+
+        game_grid.cells.forEach(cell => {
+            if(isInBounds(mouse_x, mouse_y, cell.rect)) {
+                cell.draw(current_tile_color);
+                cell.is_developed = true;
+            }
+        })
+
+
+    })
 
     var stopper = 0;
 }
@@ -69,8 +85,8 @@ function CanvasGrid(canvas, rows, columns, line_width) {
         for(var i = 0; i < rows; i++) {
             for(var j = 0; j < columns; j++) {
                 var cell_rect = {
-                    x: this.rect.x + (i * row_height),
-                    y: this.rect.y + (j * column_width),
+                    x: this.rect.x + (j * column_width),
+                    y: this.rect.y + (i * row_height),
                     width: column_width,
                     height: row_height
                 }
@@ -90,24 +106,31 @@ function CanvasGrid(canvas, rows, columns, line_width) {
 
             this.cells.forEach(cell => {
                 if(isInBounds(mouse_x, mouse_y, cell.rect)) {
-                    cell.ping();
-                    setTimeout(() => {
-                        cell.draw();
-                    }, 100);
+                    cell.draw(current_tile_color);
                 }
             })
         })
     }
 
+    this.expropriation = function() {
+        this.cells.forEach(cell => {
+            if(!cell.is_developed) {
+                
+            }
+        })
+    }
+
     this.start = function() {
         this.createCells();
-        this.drawCells();
+        this.drawCells("gray");
         this.events();
     }
 }
 
 function CanvasGridCell(canvas, rect, line_width) {
     this.ctx = canvas.getContext("2d");
+
+    this.is_developed = false;
 
     this.rect = {
         x: rect.x,
@@ -118,22 +141,15 @@ function CanvasGridCell(canvas, rect, line_width) {
 
     this.line_width = line_width;
 
-    this.draw = function() {
+    this.draw = function(fill_color) {
         this.ctx.lineWidth = this.line_width;
         this.ctx.strokeStyle = "black";
-
-        this.ctx.beginPath();
-        this.ctx.rect(this.rect.x, this.rect.y, this.rect.width, this.rect.height);
-        this.ctx.stroke();
-        this.ctx.closePath();
-    }
-
-    this.ping = function() {
-        this.ctx.fillStyle = "red";
+        this.ctx.fillStyle = fill_color;
 
         this.ctx.beginPath();
         this.ctx.rect(this.rect.x, this.rect.y, this.rect.width, this.rect.height);
         this.ctx.fill();
+        this.ctx.stroke();
         this.ctx.closePath();
     }
 }
@@ -150,4 +166,26 @@ function isInBounds(x, y, rect) {
     } else {
         return false;
     }
+}
+
+function tileSelect() {
+    var tile_select = document.querySelector(".tile-select");
+
+    var red = tile_select.querySelector(".tile-color#red");
+    var green = tile_select.querySelector(".tile-color#green");
+    var blue = tile_select.querySelector(".tile-color#blue");
+    var yellow = tile_select.querySelector(".tile-color#yellow");
+
+    red.addEventListener("click", () => {
+        current_tile_color = "red";
+    })
+    green.addEventListener("click", () => {
+        current_tile_color = "green";
+    })
+    blue.addEventListener("click", () => {
+        current_tile_color = "blue";
+    })
+    yellow.addEventListener("click", () => {
+        current_tile_color = "yellow";
+    })
 }

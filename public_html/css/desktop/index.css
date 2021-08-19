@@ -19,3 +19,23 @@ html, body {
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+.tile-select {
+    position: absolute;
+    width: 100px;
+    top: 200px;
+    left: 200px;
+    padding: 50px;
+    background-color: gray;
+}
+
+.tile-color {
+    width: 100px;
+    height: 100px;
+    margin: 20px auto 20px auto;
+}
+
+.tile-color#red {background-color: red;}
+.tile-color#green {background-color: green;}
+.tile-color#blue {background-color: blue;}
+.tile-color#yellow {background-color: yellow;}
