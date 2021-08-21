@@ -115,9 +115,24 @@ function CanvasGrid(canvas, rows, columns, line_width) {
         });
     }
 
+    this.drawCellConnections = function() {
+        this.ctx.strokeStyle = "red";
+
+        this.cells.forEach(cell => {
+            cell.adjacencies.forEach(adj_cell => {
+                this.ctx.beginPath();
+                this.ctx.moveTo(cell.center_point.x, cell.center_point.y);
+                this.ctx.lineTo(adj_cell.center_point.x, adj_cell.center_point.y);
+                this.ctx.stroke();
+                this.ctx.closePath();
+            })
+        })
+    }
+
     this.start = function() {
         this.createCells();
         this.drawCells();
+        this.drawCellConnections();
     }
 }
 
@@ -134,6 +149,11 @@ function CanvasGridCell(canvas, rect, line_width) {
         y: rect.y,
         width: rect.width,
         height: rect.height
+    }
+
+    this.center_point = {
+        x: this.rect.x + (this.rect.width / 2),
+        y: this.rect.y + (this.rect.height / 2)
     }
 
     this.line_width = line_width;
