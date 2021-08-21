@@ -11,27 +11,19 @@ function main() {
     canvas.width = width;
     canvas.height = height;
 
-    // Set background color
-    ctx.fillStyle = "rgb(120, 120, 120)";
-    ctx.fillRect(0, 0, width, height);
-
-    var game_grid = new CanvasGrid(canvas, 10, 10, 2);
-    game_grid.start();
-
     tileSelect();
 
+    var game_grid = new CanvasGrid(canvas, 4, 4, 8);
+    game_grid.start();
     canvas.addEventListener("click", event => {
         var mouse_x = event.offsetX;
         var mouse_y = event.offsetY;
 
         game_grid.cells.forEach(cell => {
-            if(isInBounds(mouse_x, mouse_y, cell.rect)) {
-                cell.draw(current_tile_color);
-                cell.is_developed = true;
+            if(pointInRect(mouse_x, mouse_y, cell.rect)) {
+                cell.draw("black", current_tile_color);
             }
         })
-
-
     })
 
     var stopper = 0;
@@ -82,6 +74,7 @@ function CanvasGrid(canvas, rows, columns, line_width) {
         var row_height = this.rect.height / this.rows;
         var column_width = this.rect.width / this.columns;
 
+        // Create array of GridCell objects
         for(var i = 0; i < rows; i++) {
             for(var j = 0; j < columns; j++) {
                 var cell_rect = {
@@ -93,43 +86,47 @@ function CanvasGrid(canvas, rows, columns, line_width) {
                 this.cells.push(new CanvasGridCell(canvas, cell_rect, line_width));
             }
         }
-    }
 
-    this.drawCells = function() {
-        this.cells.forEach(cell => cell.draw());
-    }
-
-    this.events = function() {
-        canvas.addEventListener("click", event => {
-            var mouse_x = event.offsetX;
-            var mouse_y = event.offsetY;
-
-            this.cells.forEach(cell => {
-                if(isInBounds(mouse_x, mouse_y, cell.rect)) {
-                    cell.draw(current_tile_color);
-                }
-            })
-        })
-    }
-
-    this.expropriation = function() {
-        this.cells.forEach(cell => {
-            if(!cell.is_developed) {
-                
+        // Set adjecency relationships for all cells
+        // This effectively turns the grid into an undirected graph
+        this.cells.forEach((cell, index) => {
+            // If cell isn't in the top row, set up adjacency
+            if(!(index < this.columns)) {
+                cell.adjacencies.push(this.cells[index - this.columns]);
+            }
+            // If cell isn't in the rightmost column, set right adjecency
+            if(!(index % this.columns === this.columns - 1)) {
+                cell.adjacencies.push(this.cells[index + 1]);
+            }
+            // If cell isn't in the bottom row, set down adjacency
+            if(!(index >= (this.columns * (this.rows - 1)))) {
+                cell.adjacencies.push(this.cells[index + this.columns]);
+            }
+            // If cell isn't in the leftmost column, set left adjecency
+            if(!(index % this.columns === 0)) {
+                cell.adjacencies.push(this.cells[index - 1]);
             }
         })
     }
 
+    this.drawCells = function() {
+        this.cells.forEach(cell => {
+            cell.draw("black", "gray");
+        });
+    }
+
     this.start = function() {
         this.createCells();
-        this.drawCells("gray");
-        this.events();
+        this.drawCells();
     }
 }
 
 function CanvasGridCell(canvas, rect, line_width) {
     this.ctx = canvas.getContext("2d");
 
+    this.adjacencies = [];
+
+    this.type = null;
     this.is_developed = false;
 
     this.rect = {
@@ -141,9 +138,9 @@ function CanvasGridCell(canvas, rect, line_width) {
 
     this.line_width = line_width;
 
-    this.draw = function(fill_color) {
+    this.draw = function(stroke_color, fill_color) {
         this.ctx.lineWidth = this.line_width;
-        this.ctx.strokeStyle = "black";
+        this.ctx.strokeStyle = stroke_color;
         this.ctx.fillStyle = fill_color;
 
         this.ctx.beginPath();
@@ -156,7 +153,7 @@ function CanvasGridCell(canvas, rect, line_width) {
 
 // Checks if x,y pair falls within bounds of rect object
 // Expects rect = {x: , y: , width: , height: };
-function isInBounds(x, y, rect) {
+function pointInRect(x, y, rect) {
     var x_lower = rect.x
     var x_upper = rect.x + rect.width;
     var y_lower = rect.y;
