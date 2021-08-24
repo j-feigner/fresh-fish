@@ -1,30 +1,10 @@
 window.onload = main;
 
 function main() {
-    // Get Canvas and 2D Canvas Rendering Context
-    var canvas = document.getElementById("game");
-    var ctx = canvas.getContext("2d");
-
-    // Set scale of Canvas
-    var width = 900;
-    var height = 900;
-    canvas.width = width;
-    canvas.height = height;
+    var game = new FreshFish();
+    game.start();
 
     tileSelect();
-
-    var game_grid = new CanvasGrid(canvas, 4, 4, 8);
-    game_grid.start();
-    canvas.addEventListener("click", event => {
-        var mouse_x = event.offsetX;
-        var mouse_y = event.offsetY;
-
-        game_grid.cells.forEach(cell => {
-            if(pointInRect(mouse_x, mouse_y, cell.rect)) {
-                cell.draw("black", current_tile_color);
-            }
-        })
-    })
 
     var stopper = 0;
 }
@@ -52,6 +32,63 @@ function grid(canvas, ctx, rows, columns, line_width, line_color) {
         ctx.closePath();
 
         ctx.stroke();
+    }
+}
+
+function FreshFish() {
+    this.canvas = document.getElementById("game");
+    this.ctx = this.canvas.getContext("2d");
+
+    this.game_grid;
+
+    this.checkBuildings = function() {
+        this.game_grid.cells.forEach(cell => {
+            if(cell.type === "building") {
+                var available_adj = 0;
+    
+                cell.adjacencies.forEach(adj_cell => {
+                    if(!adj_cell.is_developed) {
+                        available_adj++;
+                    }
+                })
+    
+                if(available_adj === 1) {
+                    cell.adjacencies.forEach(adj_cell => {
+                        if(!adj_cell.is_developed) {
+                            adj_cell.draw("black", "brown");
+                        }
+                    })
+                }
+            }
+        })
+    }
+
+    this.setEvents = function() {
+        this.canvas.addEventListener("click", event => {
+            var mouse_x = event.offsetX;
+            var mouse_y = event.offsetY;
+    
+            this.game_grid.cells.forEach(cell => {
+                if(pointInRect(mouse_x, mouse_y, cell.rect)) {
+                    cell.draw("black", current_tile_color);
+                    cell.type = "building";
+                    cell.is_developed = true;
+                    this.checkBuildings(this.game_grid);
+                }
+            })
+        })
+    }
+
+    this.setCanvasScale = function(width, height) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+    }
+
+    this.start = function() {
+        this.setCanvasScale(900, 900);
+        this.game_grid = new CanvasGrid(this.canvas, 4, 4, 8);
+        this.game_grid.start();
+        this.setEvents();
     }
 }
 
@@ -115,6 +152,7 @@ function CanvasGrid(canvas, rows, columns, line_width) {
         });
     }
 
+    // Displays adjacency relationships between cells
     this.drawCellConnections = function() {
         this.ctx.strokeStyle = "red";
 
@@ -132,7 +170,7 @@ function CanvasGrid(canvas, rows, columns, line_width) {
     this.start = function() {
         this.createCells();
         this.drawCells();
-        this.drawCellConnections();
+        //this.drawCellConnections();
     }
 }
 
