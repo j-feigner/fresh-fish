@@ -6,6 +6,8 @@ function main() {
 
     tileSelect();
 
+    DFS(game.game_grid);
+
     var stopper = 0;
 }
 
@@ -56,9 +58,29 @@ function FreshFish() {
                     cell.adjacencies.forEach(adj_cell => {
                         if(!adj_cell.is_developed) {
                             adj_cell.draw("black", "brown");
+                            adj_cell.type = "road";
                         }
                     })
                 }
+            }
+        })
+    }
+
+    this.expropriation = function() {
+        this.game_grid.forEach(cell => {
+            // If cell is not developed and is not a road
+            if(!cell.is_developed && cell.type != "road") {
+                // Assume this cell was developed 
+                cell.is_developed = true;
+
+                // Check if all other undeveloped cells are connected
+                this.game_grid.forEach(cell => {
+
+                })
+
+                // If false, revert cell to undeveloped and set as road
+
+                // If true, revert cell and check recursively for all other undeveloped cells
             }
         })
     }
@@ -74,6 +96,7 @@ function FreshFish() {
                     cell.type = "building";
                     cell.is_developed = true;
                     this.checkBuildings(this.game_grid);
+                    this.expropriation();
                 }
             })
         })
@@ -93,7 +116,8 @@ function FreshFish() {
 }
 
 function CanvasGrid(canvas, rows, columns, line_width) {
-    this.ctx = canvas.getContext("2d");
+    this.canvas = canvas;
+    this.ctx = this.canvas.getContext("2d");
 
     this.rect = {
         x: line_width / 2,
@@ -120,10 +144,14 @@ function CanvasGrid(canvas, rows, columns, line_width) {
                     width: column_width,
                     height: row_height
                 }
-                this.cells.push(new CanvasGridCell(canvas, cell_rect, line_width));
+                var new_cell = new CanvasGridCell(canvas, cell_rect, line_width);
+                new_cell.id = (i * this.rows) + j;
+                this.cells.push(new_cell);
             }
         }
+    }
 
+    this.createCellConnections = function() {
         // Set adjecency relationships for all cells
         // This effectively turns the grid into an undirected graph
         this.cells.forEach((cell, index) => {
@@ -169,6 +197,7 @@ function CanvasGrid(canvas, rows, columns, line_width) {
 
     this.start = function() {
         this.createCells();
+        this.createCellConnections();
         this.drawCells();
         //this.drawCellConnections();
     }
@@ -177,6 +206,7 @@ function CanvasGrid(canvas, rows, columns, line_width) {
 function CanvasGridCell(canvas, rect, line_width) {
     this.ctx = canvas.getContext("2d");
 
+    this.id = null;
     this.adjacencies = [];
 
     this.type = null;
@@ -242,5 +272,22 @@ function tileSelect() {
     })
     yellow.addEventListener("click", () => {
         current_tile_color = "yellow";
+    })
+}
+
+function DFS(graph) {
+    var root = graph.cells[0];
+    var visited = new Array(graph.cells.length);
+    visited.fill(false);
+    DFSRecursiveHelper(root, visited);
+}
+
+function DFSRecursiveHelper(vertex, visited) {
+    visited[vertex.id] = true;
+
+    vertex.adjacencies.forEach(adj => {
+        if(!visited[adj.id]) {
+            DFSRecursiveHelper(adj, visited);
+        }
     })
 }
