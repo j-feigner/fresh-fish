@@ -90,13 +90,21 @@ function FreshFish() {
             var mouse_x = event.offsetX;
             var mouse_y = event.offsetY;
     
-            this.game_grid.cells.forEach(cell => {
+            this.game_grid.cells.forEach((cell, index) => {
                 if(pointInRect(mouse_x, mouse_y, cell.rect)) {
                     cell.draw("black", current_tile_color);
                     cell.type = "building";
                     cell.is_developed = true;
-                    this.checkBuildings(this.game_grid);
-                    this.expropriation();
+                    cell.adjacencies.forEach(adj => {
+                        var index = adj.adjacencies.indexOf(cell);
+                        if(index != -1) {
+                            adj.adjacencies.splice(index, 1);
+                        }
+                    })
+                    this.game_grid.cells.splice(index, 1);
+                    DFS(this.game_grid);
+                    //this.checkBuildings(this.game_grid);
+                    //this.expropriation();
                 }
             })
         })
@@ -109,7 +117,7 @@ function FreshFish() {
 
     this.start = function() {
         this.setCanvasScale(900, 900);
-        this.game_grid = new CanvasGrid(this.canvas, 4, 4, 8);
+        this.game_grid = new CanvasGrid(this.canvas, 10, 10, 8);
         this.game_grid.start();
         this.setEvents();
     }
@@ -280,7 +288,6 @@ function tileSelect() {
 }
 
 function DFS(graph) {
-    var root = graph.cells[0];
     var disc = new Array(graph.cells.length);
     var low = new Array(graph.cells.length);
     var parent = new Array(graph.cells.length);
@@ -288,34 +295,41 @@ function DFS(graph) {
     var articulation_points = new Array(graph.cells.length).fill(false);
 
     DFSRecursiveHelper.time = 0;
-    DFSRecursiveHelper(root, disc, low, visited, parent, articulation_points);
+    DFSRecursiveHelper(graph.cells, 0, disc, low, visited, parent, articulation_points);
+
+    articulation_points.forEach((ap, index) => {
+        if(ap) {
+            graph.cells[index].draw("black", "white");
+        }
+    })
 }
 
-function DFSRecursiveHelper(vertex, disc, low, visited, parent, articulation_points) {
-    visited[vertex.id] = true;
-    disc[vertex.id] = DFSRecursiveHelper.time++;
-    low[vertex.id] = disc[vertex.id];
+function DFSRecursiveHelper(vertices, v, disc, low, visited, parent, articulation_points) {
+    visited[v] = true;
+    disc[v] = DFSRecursiveHelper.time++;
+    low[v] = disc[v];
     var children = 0;
 
-    vertex.adjacencies.forEach(adj => {                                                 // Search all adjacent vertices of given vertex.
+    vertices[v].adjacencies.forEach(adj => {                                                    // Search all adjacent vertices of given vertex.
+        var u = vertices.indexOf(adj);
 
-        if(!visited[adj.id]) {                                                          // IF adjacent vertex has NOT been visited:
+        if(!visited[u]) {                                                                   // IF adjacent vertex has NOT been visited:
             children++;
-            parent[adj.id] = vertex.id;                                                 // Set current vertex as parent of adjacent.
-            DFSRecursiveHelper(adj, disc, low, visited, parent, articulation_points);   // Continue search from adjacent.
-            low[vertex.id] = Math.min(low[vertex.id], low[adj.id]);                     // Set highest back-edge of current vertex to either its current highest back-edge
-                                                                                        // or to a higher back-edge of one of its descendants.
+            parent[u] = v;                                                              // Set current vertex as parent of adjacent.
+            DFSRecursiveHelper(vertices, u, disc, low, visited, parent, articulation_points);    // Continue search from adjacent.
+            low[v] = Math.min(low[v], low[u]);                                      // Set highest back-edge of current vertex to either its current highest back-edge
+                                                                                                    // or to a higher back-edge of one of its descendants.
             
-                                                                                        // Articulation Point Check:
-            if(vertex.id === 0 && children >= 2) {                                      // Case 1 (current vertex is root): if current vertex has 2 or more children, it is an AP
-                articulation_points[vertex.id] = true;                                              
-            } else if(low[adj.id] >= disc[vertex.id]) {                                 // Case 2 (current vertex is NOT root): if there are no adjacent vertices that can reach
-                articulation_points[vertex.id] = true;                                  // a higher vertex than the current, than it is an AP
+                                                                                                    // Articulation Point Check:
+            if(v === 0 && children >= 2) {                                                      // Case 1 (current vertex is root): if current vertex has 2 or more children, it is an AP
+                articulation_points[v] = true;                                              
+            } else if(v != 0 && low[u] >= disc[v]) {                                // Case 2 (current vertex is NOT root): if there are no adjacent vertices that can reach
+                articulation_points[v] = true;                                                  // a higher vertex than the current, than it is an AP
             }
 
-        } else if(parent[vertex.id] != adj.id) {                                        // IF adjecent vertex HAS been visited and is NOT the parent of the current vertex:
-            low[vertex.id] = Math.min(low[vertex.id], disc[adj.id]);                    // Set highest back-edge of current vertex to either its current highest back-edge
-                                                                                        // or to the discovery number of adjacent vertex, whichever is lower.
+        } else if(parent[v] != u) {                                                     // IF adjecent vertex HAS been visited and is NOT the parent of the current vertex:
+            low[v] = Math.min(low[v], disc[u]);                                     // Set highest back-edge of current vertex to either its current highest back-edge
+                                                                                                    // or to the discovery number of adjacent vertex, whichever is lower.
         }
     })
 } 
